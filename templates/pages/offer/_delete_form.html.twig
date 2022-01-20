@@ -1,0 +1,4 @@
+<form method="post" class="hidden" id="offer_delete" onsubmit="return confirm('Souhaitez-vous vraiment supprimer cette offres ?');">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete') }}">
+    <button class="rounded-md border border-red-300 shadow-sm px-4 py-2 bg-red-600 text-gray-50 hover:bg-red-700 text-sm">Supprimer</button>
+</form>

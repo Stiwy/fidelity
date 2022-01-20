@@ -1,0 +1,74 @@
+<div id="formCustomerModal" class="hidden fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <div class="flex justify-between">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="form-modal-title">
+                            </h3>
+                            {% include 'pages/customer/_delete_form.html.twig' %}
+                        </div>
+                        <div class="mt-2">
+                            {{ form_start(form, {'attr': {'id': 'customer_form'}}) }}
+                                <div class="my-4 text-gray-600">
+                                    {{ form_row(form.name) }}
+                                </div>
+                                <div class="my-4 text-gray-600">
+                                    {{ form_row(form.phone) }}
+                                </div>
+                                <div class="my-4 text-gray-600">
+                                    {{ form_row(form.email) }}
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button onclick="formCustomerModal()" type="button" class="bg-gray-600 py-1 px-3 text-white rounded-md shadow-md border border-gray-200 mr-5">Fermer</button>
+                                    <button type="submit" class="bg-green-600 py-1 px-3 text-white rounded-md shadow-md border border-gray-200">{{ button_label|default('Enregistré') }}</button>
+                                </div>
+                            {{ form_end(form) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formCustomerModal(id = null) {
+        let modal = document.getElementById('formCustomerModal');
+        modal.classList.toggle('hidden');
+
+        let modalTitle = document.getElementById('form-modal-title');
+
+        modalTitle.textContent = 'Ajouter un utilisateur';
+        document.getElementById('customer_form').setAttribute('action', 'http://127.0.0.1:8000/clients/nouveau')
+
+        if (id != null) {
+            let url = 'http://127.0.0.1:8000/clients/'+id;
+            fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                method: 'GET',
+            })
+                .then((resp) => resp.json())
+                .then( function(data) {
+                        modalTitle.textContent = 'Editer un utilisateur';
+                    document.getElementById('customer_form').setAttribute('action', 'http://127.0.0.1:8000/clients/editer/'+id)
+
+                    console.log(data)
+                        document.getElementById('customer_delete').classList.remove('hidden');
+                        document.getElementById('customer_delete').setAttribute('action', 'http://127.0.0.1:8000/clients/'+id);
+                        document.getElementById('customer_name').value = data.name;
+                        document.getElementById('customer_phone').value = data.phone;
+                        document.getElementById('customer_email').value = data.email;
+                        document.getElementById('customer_id').value = data.id;
+                    }
+                );
+        }
+    }
+</script>

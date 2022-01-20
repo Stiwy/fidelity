@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Se connecter{% endblock %}
+
+{% block body %}
+
+    <div class="flex max-h-screen">
+        {% include 'partials/sidebar.html.twig' %}
+
+        <div class="bg-gray-300 w-10/12 px-10 py-5 text-gray-700 h-screen overflow-scroll">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+
+{% endblock %}

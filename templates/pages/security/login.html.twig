@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Se connecter{% endblock %}
+
+{% block body %}
+<div class="w-4/12 mx-auto mt-32">
+    <img class="mx-auto mb-10" src="{{ asset('images/logo_robe_medical.png') }}" alt="Robé Médical">
+    <div class="shadow-lg rounded-md p-5 border-2 border-gray-100">
+        <p class="text-blue-400 text-2xl font-bold uppercase text-center pb-4">Se connecter</p>
+        <form method="post">
+            {% if error %}
+                <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+            {% endif %}
+
+            <div class="my-4 text-gray-600">
+                <label for="inputUsername" class="block text-xl">Identifiant</label>
+                <input type="text" class="pl-3 bg-gray-100 w-full h-8" value="{{ last_username }}" name="username" id="inputUsername" class="form-control" autocomplete="username" required autofocus>
+            </div>
+
+            <div class="my-4 text-gray-600">
+                <label for="inputPassword" class="block text-xl">Mot de passe</label>
+                <input type="password" class="pl-3 bg-gray-100 w-full h-8" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+            </div>
+
+            <input type="hidden" name="_csrf_token"
+                   value="{{ csrf_token('authenticate') }}"
+            >
+
+            <div class="checkbox mb-3">
+                <label>
+                    <input type="checkbox" name="_remember_me"> Se souvenir de moi ?
+                </label>
+            </div>
+
+            <button class="block mt-8 bg-blue-500 px-3 py-2 rounded-md text-white w-full" type="submit">
+                Se connecter
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

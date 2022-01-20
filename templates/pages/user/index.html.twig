@@ -1,0 +1,65 @@
+{% extends 'layout/connected.html.twig' %}
+
+{% block title %}Admin - Robé Médical{% endblock %}
+
+{% block content %}
+    <h2 class="text-gray-400 text-4xl font-bold mt-16">Liste des administrateurs</h2>
+
+    <div class="flex justify-between mt-10">
+        <form action="" class="w-3/4">
+            <div class="w-full flex">
+                <input id="searchbar" onkeyup="search()" class="pl-3 bg-gray-50 w-full h-10 rounded-l-md shadow-lg" type="search" placeholder="Rechercher un client">
+                <button class="w-1/5 bg-gray-700 text-white h-10 rounded-r-md shadow-lg" type="submit">Rechercher</button>
+            </div>
+        </form>
+
+        <button onclick="formUserModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">Nouvel administrateur</button>
+    </div>
+
+    <div class="bg-white p-10 mt-10 rounded-md shadow-lg">
+        <table class="w-full leading-9 border-2 border-gray-200 text-center">
+            <thead class="bg-blue-500 text-white font-bold">
+                <tr>
+                    <th>Id</th>
+                    <th>Identifiant</th>
+                    <th>Roles</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for key, user in users %}
+                <tr class="users {% if key%2 %} bg-blue-50 {% endif %}">
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.roles[0] == "ROLE_ADMIN" ? '<p class="text-red-500 font-bold">Admin</p>' : '<p class="text-gray-500 font-bold">Membre</p>' }}</td>
+                    <td>
+                        <button onclick="formUserModal('{{ user.id }}')" class="bg-yellow-400 rounded-md shadow-lg py-1 px-3 my-1 border-1 text-sm border-gray-400 hover:shadow:xl hover:bg-yellow-300">Editer</button>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-xl py-5 text-gray-500">Pas d'administrateurs</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {{ include('pages/user/_form.html.twig') }}
+
+    <script>
+        function search() {
+            let input = document.getElementById('searchbar').value
+            input=input.toLowerCase();
+            let x = document.getElementsByClassName('users');
+
+            for (i = 0; i < x.length; i++) {
+                if (!x[i].innerHTML.toLowerCase().includes(input)) {
+                    x[i].style.display="none";
+                } else {
+                    x[i].style.display="revert";
+                }
+            }
+        }
+    </script>
+{% endblock %}
