@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -28,7 +29,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/nouveau', name: 'user_new', methods: ['GET', 'POST'])]
-    public function new(UserRepository $userRepository, Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $hasher): Response
+    public function new(UserRepository $userRepository, Session $session, Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $hasher): Response
     {
         $user = new User();
         $form = $this->createForm(UserType::class, $user);
@@ -36,17 +37,30 @@ class UserController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             if (is_null($form->get('password')->getData())) {
-                return $this->redirectToRoute('user_index', [Response::HTTP_SEE_OTHER]);
+                $session->getFlashBag()->add(
+                    'error',
+                    "Le mot de passe est obligatoire !"
+                );
+            } else {
+                $roles = [$form->get('roles')->getData()];
+                $password = $hasher->hashPassword($user, $form->get('password')->getData());
+
+                $user->setRoles($roles);
+                $user->setPassword($password);
+
+                $entityManager->persist($user);
+                $entityManager->flush();
+
+                $session->getFlashBag()->add(
+                    'success',
+                    "Administrateur crée avec succès !"
+                );
             }
-
-            $roles = [$form->get('roles')->getData()];
-            $password = $hasher->hashPassword($user, $form->get('password')->getData());
-
-            $user->setRoles($roles);
-            $user->setPassword($password);
-
-            $entityManager->persist($user);
-            $entityManager->flush();
+        } elseif($form->isSubmitted()) {
+            $session->getFlashBag()->add(
+                'error',
+                "Les mots de passe ne sont pas identiques !"
+            );
         }
 
         return $this->redirectToRoute('user_index', [Response::HTTP_SEE_OTHER]);
@@ -59,7 +73,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/editer/{id}', name: 'user_edit', methods: ['POST'])]
-    public function edit(Request $request, User $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $hasher): Response
+    public function edit(Request $request, Session $session, User $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $hasher): Response
     {
         $form = $this->createForm(UserType::class, $user);
         $form->handleRequest($request);
@@ -77,17 +91,26 @@ class UserController extends AbstractController
             }
 
             $entityManager->flush();
+            $session->getFlashBag()->add(
+                'success',
+                "Administrateur édité avec succès !"
+            );
         }
 
         return $this->redirectToRoute('user_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{id}', name: 'user_delete', methods: ['POST'])]
-    public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
+    public function delete(Request $request, Session $session, User $user, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete', $request->request->get('_token'))) {
             $entityManager->remove($user);
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'warning',
+                "Administrateur supprimé avec succès !"
+            );
         }
 
         return $this->redirectToRoute('user_index', [], Response::HTTP_SEE_OTHER);

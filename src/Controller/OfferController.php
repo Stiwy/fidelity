@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/offres')]
@@ -28,7 +29,7 @@ class OfferController extends AbstractController
     }
 
     #[Route('/nouveau', name: 'offer_new', methods: ['POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, CustomerRepository $customerRepository): Response
+    public function new(Request $request, Session $session, EntityManagerInterface $entityManager, CustomerRepository $customerRepository): Response
     {
         $offer = new Offer();
         $form = $this->createForm(OfferType::class, $offer);
@@ -46,6 +47,11 @@ class OfferController extends AbstractController
 
             $entityManager->persist($offer);
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'success',
+                "L'offre a bien été créée !"
+            );
         }
 
         return $this->redirectToRoute('offer_index', [], Response::HTTP_SEE_OTHER);
@@ -72,7 +78,7 @@ class OfferController extends AbstractController
     }
 
     #[Route('/editer/{id}', name: 'offer_edit', methods: ['POST'])]
-    public function edit(Request $request, Offer $offer, EntityManagerInterface $entityManager, CustomerRepository $customerRepository): Response
+    public function edit(Request $request, Session $session, Offer $offer, EntityManagerInterface $entityManager, CustomerRepository $customerRepository): Response
     {
         $form = $this->createForm(OfferType::class, $offer);
         $form->handleRequest($request);
@@ -88,17 +94,27 @@ class OfferController extends AbstractController
 
             $offer->setUpdatedDate(new \DateTime());
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'success',
+                "L'offre a bien été éditée !"
+            );
         }
 
         return $this->redirectToRoute('offer_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{id}', name: 'offer_delete', methods: ['POST'])]
-    public function delete(Request $request, Offer $offer, EntityManagerInterface $entityManager): Response
+    public function delete(Request $request, Session $session, Offer $offer, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete', $request->request->get('_token'))) {
             $entityManager->remove($offer);
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'warning',
+                "L'offre a bien été supprimée !"
+            );
         }
 
         return $this->redirectToRoute('offer_index', [], Response::HTTP_SEE_OTHER);

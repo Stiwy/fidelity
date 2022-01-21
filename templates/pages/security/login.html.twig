@@ -3,13 +3,16 @@
 {% block title %}Se connecter{% endblock %}
 
 {% block body %}
+
+{{ include('partials/flashMessage.html.twig') }}
+
 <div class="w-4/12 mx-auto mt-32">
     <img class="mx-auto mb-10" src="{{ asset('images/logo_robe_medical.png') }}" alt="Robé Médical">
     <div class="shadow-lg rounded-md p-5 border-2 border-gray-100">
         <p class="text-blue-400 text-2xl font-bold uppercase text-center pb-4">Se connecter</p>
         <form method="post">
             {% if error %}
-                <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+                <div class="mb-2 w-full bg-red-100 border-l-4 border-red-500 text-red-700 p-5 rounded-r-xl shadow-md">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
             {% endif %}
 
             <div class="my-4 text-gray-600">

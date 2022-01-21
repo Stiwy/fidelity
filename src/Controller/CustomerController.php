@@ -11,12 +11,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/clients')]
 class CustomerController extends AbstractController
 {
-    #[Route('/', name: 'customer_index', methods: ['GET'])]
+    #[Route('/', name: 'customer_index', methods: ['GET', 'POST'])]
     public function index(CustomerRepository $customerRepository, OfferRepository $offerRepository): Response
     {
         $customer = new Customer();
@@ -30,25 +31,41 @@ class CustomerController extends AbstractController
     }
 
     #[Route('/nouveau', name: 'customer_new', methods: ['POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
+    public function new(Request $request, Session $session, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
     {
         $customer = new Customer();
         $form = $this->createForm(CustomerType::class, $customer);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $offersNewCustomer = $offerRepository->findBy(['new_customer' => true]);
-            $customer->setInsertDate(new \DateTime());
-            $customer->setLastStoreVisit(new \DateTime());
+            if (empty($customer->getEmail()) && empty($customer->getPhone())) {
+                $session->getFlashBag()->add(
+                    'error',
+                    'Il est obligatoire de renseigner un email ou un numéro de téléphone !'
+                );
+            } else {
+                $offersNewCustomer = $offerRepository->findBy(['new_customer' => true]);
+                $customer->setInsertDate(new \DateTime());
+                $customer->setLastStoreVisit(new \DateTime());
 
-            foreach ($offersNewCustomer as $offer) {
-                $customer->addOffer($offer);
+                foreach ($offersNewCustomer as $offer) {
+                    $customer->addOffer($offer);
+                }
+
+                $entityManager->persist($customer);
+                $entityManager->flush();
+
+                $session->getFlashBag()->add(
+                    'success',
+                    'Nouveau client créée avec succès !'
+                );
             }
-
-            $entityManager->persist($customer);
-            $entityManager->flush();
+        }elseif ($form->isSubmitted()) {
+            $session->getFlashBag()->add(
+                'error',
+                'Les informations saisies sont incorrectes !'
+            );
         }
-
 
         return $this->redirectToRoute('customer_index', [], Response::HTTP_SEE_OTHER);
     }
@@ -70,38 +87,65 @@ class CustomerController extends AbstractController
     }
 
     #[Route('/editer/{id}', name: 'customer_edit', methods: ['POST'])]
-    public function edit(Request $request, Customer $customer, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, Session $session, Customer $customer, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(CustomerType::class, $customer);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $customer->setUpdatedDate(new \DateTime());
-            $entityManager->flush();
+            if (empty($customer->getEmail()) && empty($customer->getPhone())) {
+                $session->getFlashBag()->add(
+                    'error',
+                    'Il est obligatoire de renseigner un email ou un numéro de téléphone !'
+                );
+            } else {
+                $customer->setUpdatedDate(new \DateTime());
+                $entityManager->flush();
+
+                $session->getFlashBag()->add(
+                    'success',
+                    'Client édité avec succès !'
+                );
+            }
+        } elseif ($form->isSubmitted()) {
+            $session->getFlashBag()->add(
+                'error',
+                'Les informations saisies sont incorrectes !'
+            );
         }
 
         return $this->redirectToRoute('customer_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{id}', name: 'customer_delete', methods: ['POST'])]
-    public function delete(Request $request, Customer $customer, EntityManagerInterface $entityManager): Response
+    public function delete(Request $request, Session$session, Customer $customer, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete', $request->request->get('_token'))) {
             $entityManager->remove($customer);
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'warning',
+                'Le client a bien été supprimé !'
+            );
         }
 
         return $this->redirectToRoute('customer_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/offre/{id}', name: 'customer_offer', methods: ['POST'])]
-    public function addOffer(Request $request, Customer $customer, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
+    public function addOffer(Request $request, Session $session, Customer $customer, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
     {
         if ($this->isCsrfTokenValid('offer_customer', $request->request->get('_token'))) {
             if ($idOffer = $request->get('offer')['id']) {
                 $offer = $offerRepository->findOneBy(['id' => $idOffer]);
                 $customer->addOffer($offer);
                 $entityManager->flush();
+
+                $session->getFlashBag()->add(
+                    'info',
+                    "L’offre à bien été ajoutée !"
+                );
             }
         }
 
@@ -109,7 +153,7 @@ class CustomerController extends AbstractController
     }
 
     #[Route('/offre/{idCustomer}/{idOffer}', name: 'customer_offer_remove', methods: ['GET'])]
-    public function removeOffer($idCustomer, $idOffer, EntityManagerInterface $entityManager, CustomerRepository $customerRepository, OfferRepository $offerRepository): Response
+    public function removeOffer($idCustomer, Session $session, $idOffer, EntityManagerInterface $entityManager, CustomerRepository $customerRepository, OfferRepository $offerRepository): Response
     {
         $customer = $customerRepository->findOneBy(['id' => $idCustomer]);
         $offer = $offerRepository->findOneBy(['id' => $idOffer]);
@@ -117,17 +161,27 @@ class CustomerController extends AbstractController
         if (!empty($customer) && !empty($offer)) {
             $customer->removeOffer($offer);
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'info',
+                "L’offre à bien été retirée !"
+            );
         }
 
         return $this->redirectToRoute('customer_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/visite_magasin/{id}', name: 'customer_after_visit_store', methods: ['POST'])]
-    public function afterVisitStore(Request $request, Customer $customer, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
+    public function afterVisitStore(Request $request, Session $session, Customer $customer, EntityManagerInterface $entityManager, OfferRepository $offerRepository): Response
     {
         if ($this->isCsrfTokenValid('offer_after_visit_store', $request->request->get('_token'))) {
             $customer->setLastStoreVisit(new \DateTime());
             $entityManager->flush();
+
+            $session->getFlashBag()->add(
+                'info',
+                "Le client est passé au magasin !"
+            );
         }
 
         return $this->redirectToRoute('customer_index', [], Response::HTTP_SEE_OTHER);
